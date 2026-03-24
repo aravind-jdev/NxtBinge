@@ -1,90 +1,113 @@
-import { fetchFromTMDB } from "../services/tmdbService.js";
-import { getRandomPage, getRandomItem } from "../utils/random.js";
+import {
+  fetchRandomMovies,
+  fetchFilteredMovies,
+  fetchSearchMovies,
+  fetchTrendingMovies,
+  fetchMovieDetails,
+  fetchMovieVideos
+} from "../services/tmdbService.js";
+
+import { getRandomItem } from "../utils/random.js";
+import { asyncHandler } from "../utils/asyncHandler.js";
+import { formatMovie, formatMovies } from "../utils/formatter.js";
+import { getCache, setCache } from "../utils/cache.js";
 
 // 🎲 Random Movie
-export const getRandomMovie = async (req, res) => {
-  try {
-    const page = getRandomPage();
+export const getRandomMovie = asyncHandler(async (req, res) => {
+  const movies = await fetchRandomMovies();
 
-    const data = await fetchFromTMDB("/discover/movie", { page });
-
-    const movie = getRandomItem(data.results);
-
-    res.json(movie);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (!movies || movies.length === 0) {
+    return res.status(404).json({ message: "No movies found" });
   }
-};
+
+  const randomMovie = getRandomItem(movies);
+  res.json({
+  success: true,
+  data: formatMovie(randomMovie)
+  });
+});
 
 // 🎭 Filter Movies
-export const getFilteredMovies = async (req, res) => {
-  try {
-    const { genre, rating, year, language } = req.query;
+export const getFilteredMovies = asyncHandler(async (req, res) => {
+  const cacheKey = `filter_${JSON.stringify(req.query)}`;
 
-    const page = getRandomPage();
-
-    const params = {
-      page,
-      with_genres: genre,
-      "vote_average.gte": rating,
-      primary_release_year: year,
-      with_original_language: language,
-    };
-
-    const data = await fetchFromTMDB("/discover/movie", params);
-
-    res.json(data.results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  const cached = getCache(cacheKey);
+  if (cached) {
+    return res.json(cached);
   }
-};
+
+  const movies = await fetchFilteredMovies(req.query);
+  const formatted = formatMovies(movies);
+
+  setCache(cacheKey, formatted, 5 * 60 * 1000);
+
+  res.json({
+  success: true,
+  count: formatted.length,
+  data: formatted
+  });
+});
 
 // 🔍 Search Movies
-export const searchMovies = async (req, res) => {
-  try {
-    const { query } = req.query;
+export const searchMovies = asyncHandler(async (req, res) => {
+  const { query } = req.query;
 
-    const data = await fetchFromTMDB("/search/movie", { query });
-
-    res.json(data.results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  if (!query) {
+    return res.status(400).json({ message: "Search query is required" });
   }
-};
 
-// 🎬 Movie Details
-export const getMovieDetails = async (req, res) => {
-  try {
-    const { id } = req.params;
+  const cacheKey = `search_${query}`;
 
-    const data = await fetchFromTMDB(`/movie/${id}`);
-
-    res.json(data);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  const cached = getCache(cacheKey);
+  if (cached) {
+    return res.json(cached);
   }
-};
+
+  const movies = await fetchSearchMovies(query);
+  const formatted = formatMovies(movies);
+
+  setCache(cacheKey, formatted, 5 * 60 * 1000); // 5 mins
+
+  res.json({
+  success: true,
+  count: formatted.length,
+  data: formatted
+  });
+});
 
 // 📺 Trending Movies
-export const getTrendingMovies = async (req, res) => {
-  try {
-    const data = await fetchFromTMDB("/trending/movie/week");
+export const getTrendingMovies = asyncHandler(async (req, res) => {
+  const cacheKey = "trending";
 
-    res.json(data.results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
+  const cached = getCache(cacheKey);
+  if (cached) {
+    return res.json(cached);
   }
-};
 
-// 🎞 Movie Trailers
-export const getMovieVideos = async (req, res) => {
-  try {
-    const { id } = req.params;
+  const movies = await fetchTrendingMovies();
+  const formatted = formatMovies(movies);
 
-    const data = await fetchFromTMDB(`/movie/${id}/videos`);
+  setCache(cacheKey, formatted, 10 * 60 * 1000); // 10 mins
 
-    res.json(data.results);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-};
+  res.json({
+  success: true,
+  count: formatted.length,
+  data: formatted
+  });
+});
+
+// 🎬 Movie Details
+export const getMovieDetails = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const movie = await fetchMovieDetails(id);
+  res.json(movie);
+});
+
+// 🎞 Movie Videos
+export const getMovieVideos = asyncHandler(async (req, res) => {
+  const { id } = req.params;
+
+  const videos = await fetchMovieVideos(id);
+  res.json(videos);
+});

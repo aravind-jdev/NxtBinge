@@ -1,7 +1,7 @@
-export const getRandomPage = () => {
-  return Math.floor(Math.random() * 500) + 1;
-};
+// 🎲 Get a random item from an array
+export const getRandomItem = (arr) => {
+  if (!arr || arr.length === 0) return null;
 
-export const getRandomItem = (array) => {
-  return array[Math.floor(Math.random() * array.length)];
+  const randomIndex = Math.floor(Math.random() * arr.length);
+  return arr[randomIndex];
 };

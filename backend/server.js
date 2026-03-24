@@ -2,33 +2,39 @@ import express from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import movieRoutes from "./routes/movies.js";
+import { apiLimiter } from "./middleware/rateLimiter.js";
 
 dotenv.config();
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+app.use("/api", apiLimiter);
 
-app.use("/api/movies", movieRoutes);
+// Routes
+app.use("/api/v1/movies", movieRoutes);
 
+// Root route
 app.get("/", (req, res) => {
-  res.send("🎬 Movie API is running...");
+  res.send("🎬 NxtBinge API is running...");
 });
 
-// 404 handler
-app.use((req, res) => {
-  res.status(404).json({ error: "Route not found" });
-});
-
-// error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ error: "Something went wrong" });
-});
-
+// Server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🔥 Server running → http://localhost:${PORT}`);
+  console.log(`🔥 Server running on http://localhost:${PORT}`);
 });
+
+import { errorHandler } from "./middleware/errorMiddleware.js";
+
+// after routes
+app.use((req, res) => {
+  res.status(404).json({
+    success: false,
+    message: "Route not found"
+  });
+});
+app.use(errorHandler);
