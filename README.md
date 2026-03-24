@@ -38,28 +38,53 @@ The backend follows a **layered architecture**:
 
 ## 📁 Folder Structure
 
-movie-backend/
+movie-app/
 │
-├── controllers/
-│   └── movieController.js
+├── backend/
+│   ├── controllers/
+│   │   └── movieController.js
+│   │
+│   ├── routes/
+│   │   └── movies.js
+│   │
+│   ├── services/
+│   │   └── tmdbService.js
+│   │
+│   ├── utils/
+│   │   └── random.js
+│   │
+│   ├── config/
+│   │   └── env.js
+│   │
+│   ├── .env
+│   ├── .gitignore
+│   ├── package.json
+│   └── server.js
 │
-├── routes/
-│   └── movies.js
+├── frontend/
+│   ├── public/
+│   │   └── index.html
+│   │
+│   ├── src/
+│   │   ├── components/
+│   │   │   └── MovieCard.jsx
+│   │   │
+│   │   ├── pages/
+│   │   │   └── Home.jsx
+│   │   │
+│   │   ├── services/
+│   │   │   └── api.js
+│   │   │
+│   │   ├── App.jsx
+│   │   └── main.jsx
+│   │
+│   ├── .gitignore
+│   ├── package.json
+│   └── vite.config.js (if using Vite)
 │
-├── services/
-│   └── tmdbService.js
-│
-├── utils/
-│   └── random.js
-│
-├── config/
-│   └── env.js
-│
-├── .env
 ├── .gitignore
-├── package.json
-├── server.js
-
+├── package.json   ← (optional root config)
+└── README.md
 ---
 
 ## 🔌 API Endpoints
