@@ -5,13 +5,26 @@ import {
   searchMovies,
   getTrendingMovies,
   getMovieDetails,
-  getMovieVideos
+  getMovieVideos,
+  getSimilarMovies,
+  getGenres,
+  getLanguages,
+  getCountries
 } from "../controllers/movieController.js";
 
 const router = express.Router();
 
 // 🎲 Random Movie
 router.get("/random", getRandomMovie);
+
+// � Genres
+router.get("/genres", getGenres);
+
+// 🌐 Languages
+router.get("/languages", getLanguages);
+
+// 🌍 Countries
+router.get("/countries", getCountries);
 
 // 🎭 Filter Movies
 router.get("/filter", getFilteredMovies);
@@ -27,5 +40,8 @@ router.get("/:id", getMovieDetails);
 
 // 🎞 Movie Trailers
 router.get("/:id/videos", getMovieVideos);
+
+// 🎯 Similar Movies
+router.get("/:id/similar", getSimilarMovies);
 
 export default router;

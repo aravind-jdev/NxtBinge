@@ -36,14 +36,16 @@ return (
 <> <Navbar setQuery={setQuery} />
 
 
-  <div className="p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
-    {movies.length > 0 ? (
-      movies.map((movie) => (
-        <MovieCard key={movie.id} movie={movie} />
-      ))
-    ) : (
-      <p>No movies found...</p>
-    )}
+  <div className="w-full max-w-7xl mx-auto px-6 py-8">
+    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-6">
+      {movies.length > 0 ? (
+        movies.map((movie) => (
+          <MovieCard key={movie.id} movie={movie} />
+        ))
+      ) : (
+        <p className="col-span-full text-center text-gray-400">No movies found...</p>
+      )}
+    </div>
   </div>
 </>
 
