@@ -1,129 +1,212 @@
-# 🎬 NxtBinge – Movie Recommendation Backend
+# 🎬 NxtBinge (TMDB Movie Discovery)
 
-A scalable and production-ready **Node.js + Express backend API** that powers a movie recommendation system using the **TMDB API**.
+NxtBinge is a full-stack movie discovery app built with a React frontend and a Node.js + Express backend API that integrates with TMDB.
 
-Built with clean architecture, optimized performance, and real-world backend practices.
+It lets you:
+- Browse **Trending** movies
+- **Search** titles
+- **Shuffle** into a random movie using TMDB lists for **genre / language / country**
 
----
-
-## 🚀 Features
-
-- 🎲 Random Movie Generator
-- 🔍 Search Movies
-- 🎭 Filter Movies (genre, rating, year, language)
-- 📺 Trending Movies
-- 🎬 Movie Details
-- 🎞 Movie Trailers
+Movie details show cast/crew metadata and a **Watch Trailer** modal powered by TMDB videos.
 
 ---
 
-## 🧠 Tech Stack
+## Tech Stack
 
+### Frontend
+- React
+- React Router
+- Vite
+- Tailwind CSS
+- Axios
+
+### Backend
 - Node.js
 - Express.js
 - Axios
-- Dotenv
-- Express Rate Limit
-
----
+- dotenv
+- express-rate-limit
 
 ## 🏗 Architecture
 
-This backend follows a **layered architecture**:
+The backend uses a layered architecture:
+
+`Routes -> Controllers -> Services -> External API (TMDB)`
+
+Implementation lives under `backend/api` with shared helpers in `backend/api/utils` and middleware in `backend/api/middleware`.
+
+### 📁 Backend Folder Structure
 
 
-Routes → Controllers → Services → External API (TMDB)
-↓
-Utils
-
-
-### 📁 Folder Structure
-
-
+```text
 backend/
-│
-├── controllers/
-│ └── movieController.js
-│
-├── routes/
-│ └── movies.js
-│
-├── services/
-│ └── tmdbService.js
-│
-├── utils/
-│ ├── random.js
-│ ├── formatter.js
-│ ├── cache.js
-│ └── asyncHandler.js
-│
-├── middleware/
-│ ├── errorMiddleware.js
-│ └── rateLimiter.js
-│
-├── config/
-│ └── env.js
-│
+├── api/
+│   ├── server.js
+│   ├── config/
+│   │   └── env.js
+│   ├── controllers/
+│   │   └── movieController.js
+│   ├── routes/
+│   │   └── movies.js
+│   ├── services/
+│   │   └── tmdbService.js
+│   ├── middleware/
+│   │   ├── errorMiddleware.js
+│   │   └── rateLimiter.js
+│   └── utils/
+│       ├── asyncHandler.js
+│       ├── cache.js
+│       ├── formatter.js
+│       └── random.js
 ├── .env
 ├── package.json
-└── server.js
+└── vercel.json
+```
 
-
----
-
-## 🔌 API Base URL
-
-
-http://localhost:5000/api/v1/movies
-
+Implementation highlights:
+- In-memory caching with TTL (`backend/api/utils/cache.js`)
+- IP rate limiting (`backend/api/middleware/rateLimiter.js`)
+- Standardized error handling (`backend/api/middleware/errorMiddleware.js`)
+- TMDB response shaping into UI-friendly payloads (`backend/api/utils/formatter.js`)
 
 ---
 
-## 📡 API Endpoints
+## Live API (used by the current frontend)
 
-### 🎲 Random Movie
+The frontend is configured to call:
 
-GET /random
+`https://nxt-binge-backend.vercel.app/api/v1/movies`
 
+For local development, use:
+
+`http://localhost:5000/api/v1/movies`
+
+## Backend API Reference
+
+All endpoints are mounted under `/api/v1/movies`.
+
+### Root (backend)
+
+- `GET /` returns `🎬 NxtBinge API is running...`
+
+### Random movie
+
+- `GET /random` (optional query params: `genre`, `language`, `country`, `year`)
+
+### Genres / Languages / Countries
+
+- `GET /genres`
+- `GET /languages`
+- `GET /countries`
+
+### Discovery
+
+- `GET /search?query=...`
+- `GET /trending`
+- `GET /filter` (optional query params: `genre`, `rating`, `year`, `language`, `country`)
+
+### Movie data
+
+- `GET /:id` movie details (formatted for the UI, includes cast/crew)
+- `GET /:id/videos` movie videos/trailers (returns TMDB `results` array)
+- `GET /:id/similar` similar movies
+
+## Response Shapes (high level)
+
+Different endpoints wrap data differently to match what the frontend currently expects:
+
+### `GET /random`
+
+```json
+{
+  "success": true,
+  "data": {
+    "id": 550,
+    "title": "Fight Club",
+    "poster": "https://image.tmdb.org/t/p/w500/...",
+    "rating": 8.4,
+    "year": "1999"
+  }
+}
+```
+
+### List endpoints (`/search`, `/trending`, `/filter`, `/:id/similar`)
+
+```json
+{
+  "success": true,
+  "count": 12,
+  "data": [
+    { "id": 550, "title": "Fight Club", "poster": "...", "rating": 8.4, "year": "1999" }
+  ]
+}
+```
+
+### `GET /:id` (movie details)
+
+Returns the formatted movie object directly (no `success` wrapper):
+
+```json
+{
+  "id": 550,
+  "title": "Fight Club",
+  "poster": "https://image.tmdb.org/t/p/w500/...",
+  "backdrop": "https://image.tmdb.org/t/p/w1280/...",
+  "rating": 8.4,
+  "year": "1999",
+  "overview": "...",
+  "runtime": 139,
+  "budget": 63000000,
+  "revenue": 100853753,
+  "genres": ["Drama"],
+  "productionCompanies": ["Fox ..."],
+  "cast": [{ "id": 1, "name": "...", "character": "...", "profileImage": "..." }],
+  "crew": { "directors": [], "writers": [], "producers": [] }
+}
+```
+
+### `GET /:id/videos` (trailers)
+
+Returns the TMDB `results` array directly. The frontend selects the first item where `type === "Trailer"` and embeds it via YouTube using `key`.
 
 ---
 
-### 🔍 Search Movies
+## Setup & Run (Local)
 
-GET /search?query=batman
+### Backend
 
+Update `backend/.env`:
+- `PORT` (default: `5000`)
+- `BASE_URL` (default: `https://api.themoviedb.org/3`)
+- `TMDB_API_KEY`
 
----
+```bash
+cd backend
+npm install
+npm run dev
+```
 
-### 🎭 Filter Movies
+Backend runs at `http://localhost:5000`.
 
-GET /filter?genre=28&rating=7&year=2020&language=en
+### Frontend
 
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
----
-
-### 📺 Trending Movies
-
-GET /trending
-
-
----
-
-### 🎬 Movie Details
-
-GET /:id
-
-
----
-
-### 🎞 Movie Trailers
-
-GET /:id/videos
-
+The frontend will call your backend using the hardcoded base URL in `frontend/src/api/movieApi.js`.
+For local development, set it to `http://localhost:5000/api/v1/movies`.
 
 ---
 
-## 📦 Sample Response
+## Deployment Notes
+
+- The backend is configured for Vercel via `backend/vercel.json`.
+- The frontend is currently configured to use the deployed backend at `https://nxt-binge-backend.vercel.app/api/v1/movies`.
+
+<!--
 
 ```json
 {
@@ -252,4 +335,4 @@ When you’re ready…
 👉 **ai** — we make it smart  
 👉 **database** — we make it personal  
 
-Your call 🎬
+Your call 🎬 -->
